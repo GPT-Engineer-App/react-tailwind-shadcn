@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, Heading, Input, Button, Checkbox, HStack, VStack, IconButton, StackDivider, Spacer } from "@chakra-ui/react";
+import { Box, Heading, Input, Button, Checkbox, HStack, VStack, IconButton, StackDivider, Spacer, Collapse, useDisclosure } from "@chakra-ui/react";
 import { FaPlus, FaTrash } from "react-icons/fa";
 
 const Index = () => {
@@ -37,14 +37,27 @@ const Index = () => {
         </HStack>
       </form>
       <VStack divider={<StackDivider />} borderColor="gray.100" borderWidth="2px" p={4} borderRadius="lg" w="100%" maxW={{ base: "90vw", sm: "80vw", lg: "50vw", xl: "40vw" }} alignItems="stretch" mt={8}>
-        {todos.map((todo, index) => (
-          <HStack key={index}>
-            <Checkbox isChecked={todo.completed} onChange={() => toggleTodo(index)} />
-            <Box textDecoration={todo.completed ? "line-through" : "none"}>{todo.text}</Box>
-            <Spacer />
-            <IconButton icon={<FaTrash />} isRound="true" onClick={() => removeTodo(index)} />
-          </HStack>
-        ))}
+        {todos.map((todo, index) => {
+          const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: true });
+
+          return (
+            <Collapse key={index} in={isOpen} animateOpacity>
+              <HStack>
+                <Checkbox isChecked={todo.completed} onChange={() => toggleTodo(index)} />
+                <Box textDecoration={todo.completed ? "line-through" : "none"}>{todo.text}</Box>
+                <Spacer />
+                <IconButton
+                  icon={<FaTrash />}
+                  isRound="true"
+                  onClick={() => {
+                    onToggle();
+                    setTimeout(() => removeTodo(index), 500);
+                  }}
+                />
+              </HStack>
+            </Collapse>
+          );
+        })}
       </VStack>
     </Box>
   );
