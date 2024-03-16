@@ -1,0 +1,185 @@
+// src/pages/Index.jsx
+import React, { useState, useEffect } from "react";
+import { Box, Button, FormControl, FormLabel, Input, VStack, HStack, Heading, Text, Checkbox, useToast } from "@chakra-ui/react";
+import { FaPlus, FaTrash } from "react-icons/fa";
+
+// Helper function to fetch with automatic JSON parsing
+const fetchJSON = async (url, options = {}) => {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      "Content-Type": "application/json",
+    },
+  });
+  return response.json();
+};
+
+const Index = () => {
+  const [todos, setTodos] = useState([]);
+  const [item, setItem] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [accessToken, setAccessToken] = useState("");
+  const toast = useToast();
+
+  const API_URL = "https://backengine-iumr.fly.dev";
+
+  // Fetch todos on component mount
+  useEffect(() => {
+    const fetchTodos = async () => {
+      try {
+        const data = await fetchJSON(`${API_URL}/todos`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        if (data) {
+          setTodos(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch todos:", error);
+      }
+    };
+
+    if (accessToken) {
+      fetchTodos();
+    }
+  }, [accessToken]);
+
+  const handleLogin = async () => {
+    try {
+      const data = await fetchJSON(`${API_URL}/login`, {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      if (data.accessToken) {
+        setAccessToken(data.accessToken);
+        toast({
+          title: "Logged in successfully!",
+          status: "success",
+          duration: 2000,
+          isClosable: true,
+        });
+      } else if (data.error) {
+        toast({
+          title: "Login failed",
+          description: data.error,
+          status: "error",
+          duration: 2000,
+          isClosable: true,
+        });
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  };
+
+  const handleSignup = async () => {
+    try {
+      await fetchJSON(`${API_URL}/signup`, {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      handleLogin(); // Automatically log in after signup
+    } catch (error) {
+      console.error("Signup failed:", error);
+    }
+  };
+
+  const handleAddTodo = async () => {
+    try {
+      const data = await fetchJSON(`${API_URL}/todos`, {
+        method: "POST",
+        body: JSON.stringify({ item }),
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (data) {
+        setTodos([...todos, data]);
+        setItem("");
+      }
+    } catch (error) {
+      console.error("Failed to add todo:", error);
+    }
+  };
+
+  const handleToggleTodo = async (id, completed) => {
+    try {
+      const data = await fetchJSON(`${API_URL}/todos/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ completed: !completed }),
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (data) {
+        setTodos(todos.map((todo) => (todo.id === id ? { ...todo, completed: !completed } : todo)));
+      }
+    } catch (error) {
+      console.error("Failed to toggle todo:", error);
+    }
+  };
+
+  const handleDeleteTodo = async (id) => {
+    try {
+      await fetch(`${API_URL}/todos/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      setTodos(todos.filter((todo) => todo.id !== id));
+    } catch (error) {
+      console.error("Failed to delete todo:", error);
+    }
+  };
+
+  return (
+    <Box p={5}>
+      {!accessToken ? (
+        <VStack spacing={4}>
+          <FormControl id="email">
+            <FormLabel>Email address</FormLabel>
+            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </FormControl>
+          <FormControl id="password">
+            <FormLabel>Password</FormLabel>
+            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          </FormControl>
+          <HStack>
+            <Button colorScheme="blue" onClick={handleLogin}>
+              Login
+            </Button>
+            <Button colorScheme="teal" onClick={handleSignup}>
+              Signup
+            </Button>
+          </HStack>
+        </VStack>
+      ) : (
+        <VStack spacing={4}>
+          <Heading mb={8}>Todo List</Heading>
+          {todos.map((todo) => (
+            <HStack key={todo.id}>
+              <Checkbox isChecked={todo.completed} onChange={() => handleToggleTodo(todo.id, todo.completed)}>
+                {todo.item}
+              </Checkbox>
+              <Button colorScheme="red" size="sm" onClick={() => handleDeleteTodo(todo.id)}>
+                <FaTrash />
+              </Button>
+            </HStack>
+          ))}
+          <HStack>
+            <Input placeholder="Add todo..." value={item} onChange={(e) => setItem(e.target.value)} />
+            <Button colorScheme="green" onClick={handleAddTodo}>
+              <FaPlus />
+            </Button>
+          </HStack>
+        </VStack>
+      )}
+    </Box>
+  );
+};
+
+export default Index;

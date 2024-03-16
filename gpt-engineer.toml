@@ -1,0 +1,8 @@
+[run]
+build = "npm run build"
+
+[gptengineer-app]
+project_id = "ca310c30-dc8b-4f70-9af1-e452b385f6d5"
+
+[[gptengineer-app.openapi]]
+url = "https://backengine-iumr.fly.dev/docs/json"
